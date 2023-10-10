@@ -544,7 +544,7 @@ void lidar_new7(){
 	// error_1绝对值限定范围
 	if (error_1 > 120) error_1 = 120;
 	if (error_1 < -120) error_1 = -120;
-	float error_2 = 250-dis_left;
+	float error_2 = 300-dis_left; // 【超级重要】的参数，250会经常撞向左侧障碍物，300明显好很多
 	// error_2绝对值限定范围
 	if (error_2 > 120) error_2 = 120;
 	if (error_2 < -120) error_2 = -120;
@@ -556,8 +556,8 @@ void lidar_new7(){
 void avoid_obstacle(){
 	// 避免左右有障碍物的时候还往障碍物上撞
 	int dis_min = 250; //临界距离，可以调整
-	int dis_l = avg_dis(diss+90, 20);
-	int dis_r = avg_dis(diss+250, 20);
+	int dis_l = avg_dis(diss+100, 20);
+	int dis_r = avg_dis(diss+240, 20);
 	if (dis_l < dis_min && angle_0<0) Servo_Control(0);
 	if (dis_r < dis_min && angle_0>0) Servo_Control(0);
 }
@@ -572,7 +572,7 @@ void lidar_new8(){
 		dis[i] = avg_dis(diss+i*360/COUNT, 360/COUNT);
 	}
 	// 计算前方张角30度内的最短距离
-	for (int i=150+(int)angle_0; i<=210+(int)angle_0; ++i){
+	for (int i=150; i<=210; ++i){
 		if (diss[i]!=0 && diss[i]<dis_min_front) dis_min_front = diss[i];
 	}
 	// 如果前方有障碍物，那么小车减速，并前往最远的方向
