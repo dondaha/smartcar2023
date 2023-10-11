@@ -525,8 +525,8 @@ void lidar_new6(){
 	else Servo_Control(0);
 }
 
-void lidar_new7(){
-	// pid调节版本
+void lidar_new7(int direction){
+	// pid调节版本 // direction为0代表逆时针，1代表顺时针
 	int dis_min_front = 9999; // 记录前方张角30度内的最短距离
 	// 计算前方张角30度内的最短距离
 	for (int i=150; i<=210; ++i){
@@ -534,22 +534,31 @@ void lidar_new7(){
 	}
 	// 去除了速度调整，任务交给了lidar_new8
 	// 计算小车左侧30度范围内的平均距离
-	int dis_left_front = avg_dis(diss+100, 20);
-	int dis_left_back = avg_dis(diss+60, 20);
-	int dis_left = avg_dis(diss+80, 20);
+	int dis_left_front;
+	int dis_left_back;
+	int dis_left;
+	if (direction==0){
+		dis_left_front = avg_dis(diss+100, 20);
+		dis_left_back = avg_dis(diss+60, 20);
+		dis_left = avg_dis(diss+80, 20);
+	}else{
+		dis_left_front = avg_dis(diss+240, 20);
+		dis_left_back = avg_dis(diss+280, 20);
+		dis_left = avg_dis(diss+260, 20);
+	}
 	// int target = 0;
-	float kp_1 = 0.0; // 调成0试试
+	float kp_1 = 0.1; // 调成0试试
 	float kp_2 = 0.24;
 	float error_1 = dis_left_back - dis_left_front;
 	// error_1绝对值限定范围
 	if (error_1 > 120) error_1 = 120;
 	if (error_1 < -120) error_1 = -120;
-	float error_2 = 300-dis_left; // 【超级重要】的参数，250会经常撞向左侧障碍物，300明显好很多
+	float error_2 = 260-dis_left; // 【超级重要】的参数，250会经常撞向左侧障碍物，300明显好很多
 	// error_2绝对值限定范围
 	if (error_2 > 120) error_2 = 120;
 	if (error_2 < -120) error_2 = -120;
 	float error =  kp_1 * error_1 + kp_2 * error_2;
-	float output = error;
+	float output = error*(direction==0?1:-1); // direction为0代表逆时针，1代表顺时针，增加了一个对称的负号
 	Servo_Control(output);
 }
 
@@ -565,6 +574,7 @@ void avoid_obstacle(){
 void lidar_new8(){
 	// new5 new7结合版
 	// 效果还可以，目前的最优解 Update at 2023.10.9 
+	int direction = 0; //【0：逆时针；1：顺时针】
 	int dis[COUNT] = {0};
 	int dis_min_front = 9999; // 记录前方张角30度内的最短距离
 	// 计算每个分区的平均距离
@@ -585,9 +595,9 @@ void lidar_new8(){
 		// // 如果最远的分区在左侧，那么小车向左转，否则右转
 		if (max_dis_index < COUNT/2-1) Servo_Control(-12);
 		else if (max_dis_index > COUNT/2) Servo_Control(12);
-		else lidar_new7(); // 这句还挺重要，大大提升稳定性，在方向无误的时候贴近墙壁
+		else lidar_new7(direction); // 这句还挺重要，大大提升稳定性，在方向无误的时候贴近墙壁
 	}else{
-		lidar_new7();
+		lidar_new7(direction);
 	} // TO DO 增加贴着右边赛道的版本
 	avoid_obstacle();
 }
