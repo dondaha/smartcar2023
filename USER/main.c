@@ -602,6 +602,70 @@ void lidar_new8(){
 	avoid_obstacle();
 }
 
+
+double error_last = 0;
+
+void run(double kp, double kd, int max_dis)
+{
+	// lyh的idea 目前的最优算法 update at 2023.10.12
+	int dis_min_front = 9999; // 记录前方张角30度内的最短距离
+	// 计算前方张角30度内的最短距离
+	for (int i=150; i<=210; ++i){
+		if (diss[i]!=0 && diss[i]<dis_min_front) dis_min_front = diss[i];
+	}
+	// 如果前方有障碍物，那么小车减速，并前往最远的方向
+	if (dis_min_front < 800 && dis_min_front >= 500) Speed_Control(0.8);
+	else if (dis_min_front < 500) Speed_Control(0.8);
+	else Speed_Control(0.8);
+
+	// 计算前方赛道中心点的方位，使用pid逼近那个点
+    int count = 0;
+    int index1 = 0, dis1 = 0; // 临时变量
+    int index2 = 0, dis2 = 0;
+	double idx_1 = 0, idx_2 = 0; // 记录的最远的两个点的索引
+	double dis_1 = 0, dis_2 = 0;
+
+    // int idx_max = 0;
+    double d_max = 0;
+
+    for (int i = 90; i < 270; i++)
+    {
+        int dis = diss[i];
+        if (dis > 0 && dis < max_dis)
+        {
+            count++;
+            index1 = index2;
+            dis1 = dis2;
+
+            index2 = i;
+			dis2 = dis;
+
+            if (count > 1)
+            {
+                double d = (double)(index2-index1) * (double)(dis1+dis2) / 2.0 + (double)((dis2-dis1)>0?(dis2-dis1):(dis1-dis2));
+                if (d > d_max)
+                {
+					idx_1 = index1;
+					idx_2 = index2;
+					dis_1 = dis1;
+					dis_2 = dis2;
+                    d_max = d;
+                }
+            }
+        }
+    }
+	double oppsite_side = sqrt(pow(dis_1, 2) + pow(dis_2, 2) - 2 * dis_1 * dis_2 * cos((idx_2 - idx_1) * PI / 180));
+	double mid_line = sqrt((pow(dis_1, 2)+pow(dis_2, 2))/2-pow(oppsite_side, 2)/4);
+	double offset_angle = acos((pow(dis_1, 2)+pow(mid_line, 2)-pow(oppsite_side/2, 2))/(2*dis_1*mid_line));
+	double target_angle = idx_1 + offset_angle * 180 / PI;
+
+    double error = target_angle - 180;
+    // error = atan2(sin(error), cos(error));
+    Servo_Control(kp * error + kd * (error - error_last));
+	avoid_obstacle();
+    error_last = error;
+}
+
 //Main function 
 int main(void)
 {	
@@ -622,7 +686,9 @@ int main(void)
 	USART5_START_SEND();
 	//开始循环分析雷达数据
 	while(1){
-		lidar_new8();
+		// lidar_new8();
+		run(0.5, 0.0, 900);
+		// Speed_Control(0.8);
 	}
 }
 
