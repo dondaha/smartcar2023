@@ -471,6 +471,14 @@ int get_max_index(int dis[], int n){
 	return max_index;
 }
 
+int get_max(int dis[], int n){
+	int max = 0;
+	for (int i=0; i<n; ++i){
+		if (dis[i]>max) max = dis[i];
+	}
+	return max;
+}
+
 #define COUNT 20
 
 void lidar_new5(){
@@ -614,10 +622,10 @@ void run(double kp, double kd, int max_dis)
 	// for (int i=150; i<=210; ++i){
 	// 	if (diss[i]!=0 && diss[i]<dis_min_front) dis_min_front = diss[i];
 	// }
-	dis_min_front = avg_dis(diss+175,10);
+	dis_min_front = avg_dis(diss+170,21);
 	// 如果前方有障碍物，那么小车减速
-	if (dis_min_front < 800 && dis_min_front >= 500) Speed_Control(0.6);
-	else if (dis_min_front < 500) Speed_Control(0.5);
+	if (dis_min_front < 800 && dis_min_front >= 500) Speed_Control(0.7);
+	else if (dis_min_front < 500) Speed_Control(0.6);
 	else Speed_Control(0.8);
 
 	// 计算前方赛道中心点的方位，使用pid逼近那个点
@@ -669,10 +677,11 @@ void run(double kp, double kd, int max_dis)
 	double lambda = 0.6;
 	// if (diss[(int)idx_1]-diss[(int)idx_2] > 100) lambda = 0.6;
 	// else lambda = 0.4;
-	if (avg_dis(diss+175,10)>1000) lambda = 0.3333;
-	else if (avg_dis(diss+175,10)>800) lambda = 0.4;
-	else if (avg_dis(diss+175,10)>600) lambda = 0.5;
+	if (avg_dis(diss+175,10)>1100) lambda = 0.3333;
+	else if (avg_dis(diss+175,10)>900) lambda = 0.4;
+	else if (avg_dis(diss+175,10)>700) lambda = 0.5;
 	else lambda = 0.6;
+	// lambda = 0.5; // 先全部调成0.5 复刻第一轮
 	double dot_ab = dis_1 * dis_2 * cos((idx_2 - idx_1) * PI / 180);
 	double m = sqrt(pow(1-lambda,2)*pow(dis_1,2)+pow(lambda,2)*pow(dis_2,2)+2*(1-lambda)*lambda*dot_ab);
 	double theta = acos(((1-lambda)*pow(dis_1,2)+lambda*dot_ab)/(dis_1*m))*180/PI;

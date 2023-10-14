@@ -1,2 +1,8 @@
-Load "..\\OBJ\\WHEELTEC.axf" 
-Erase Done.Programming Done.Verify OK.Flash Load finished at 10:53:51
+*** Using Compiler 'V5.06 update 7 (build 960)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
+Build target 'FreeRTOS'
+compiling main.c...
+linking...
+Program Size: Code=14592 RO-data=936 RW-data=160 ZI-data=3176  
+FromELF: creating hex file...
+"..\OBJ\WHEELTEC.axf" - 0 Error(s), 0 Warning(s).
+Build Time Elapsed:  00:00:01
