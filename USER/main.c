@@ -526,7 +526,7 @@ void lidar_new6(){
 }
 
 void lidar_new7(int direction){
-	// pid调节版本 // direction为0代表逆时针，1代表顺时针
+	// pid调节版本 // 【0：贴左侧墙；1：贴右侧墙】
 	int dis_min_front = 9999; // 记录前方张角30度内的最短距离
 	// 计算前方张角30度内的最短距离
 	for (int i=150; i<=210; ++i){
@@ -574,7 +574,7 @@ void avoid_obstacle(){
 void lidar_new8(){
 	// new5 new7结合版
 	// 效果还可以，目前的最优解 Update at 2023.10.9 
-	int direction = 0; //【0：逆时针；1：顺时针】
+	int direction = 0; //【0：贴左侧墙；1：贴右侧墙】
 	int dis[COUNT] = {0};
 	int dis_min_front = 9999; // 记录前方张角30度内的最短距离
 	// 计算每个分区的平均距离
@@ -615,9 +615,9 @@ void run(double kp, double kd, int max_dis)
 		if (diss[i]!=0 && diss[i]<dis_min_front) dis_min_front = diss[i];
 	}
 	// 如果前方有障碍物，那么小车减速
-	if (dis_min_front < 800 && dis_min_front >= 500) Speed_Control(0.8);
-	else if (dis_min_front < 500) Speed_Control(0.8);
-	else Speed_Control(0.8);
+	if (dis_min_front < 800 && dis_min_front >= 500) Speed_Control(0.6);
+	else if (dis_min_front < 500) Speed_Control(0.5);
+	else Speed_Control(0.6);
 
 	// 计算前方赛道中心点的方位，使用pid逼近那个点
     int count = 0;
@@ -658,10 +658,28 @@ void run(double kp, double kd, int max_dis)
             }
         }
     }
-	double oppsite_side = sqrt(pow(dis_1, 2) + pow(dis_2, 2) - 2 * dis_1 * dis_2 * cos((idx_2 - idx_1) * PI / 180));
-	double mid_line = sqrt((pow(dis_1, 2)+pow(dis_2, 2))/2-pow(oppsite_side, 2)/4);
-	double offset_angle = acos((pow(dis_1, 2)+pow(mid_line, 2)-pow(oppsite_side/2, 2))/(2*dis_1*mid_line));
-	double target_angle = idx_1 + offset_angle * 180 / PI;
+	/*采用中线算法*/
+	// double oppsite_side = sqrt(pow(dis_1, 2) + pow(dis_2, 2) - 2 * dis_1 * dis_2 * cos((idx_2 - idx_1) * PI / 180));
+	// double mid_line = sqrt((pow(dis_1, 2)+pow(dis_2, 2))/2-pow(oppsite_side, 2)/4);
+	// double offset_angle = acos((pow(dis_1, 2)+pow(mid_line, 2)-pow(oppsite_side/2, 2))/(2*dis_1*mid_line));
+	// double target_angle = idx_1 + offset_angle * 180 / PI;
+	
+	/*采用比例算法*/
+	double lambda = 0.6;
+	if (diss[(int)idx_1]-diss[(int)idx_2] > 100) lambda = 0.6;
+	else lambda = 0.4;
+	double dot_ab = dis_1 * dis_2 * cos((idx_2 - idx_1) * PI / 180);
+	double m = sqrt(pow(1-lambda,2)*pow(dis_1,2)+pow(lambda,2)*pow(dis_2,2)+2*(1-lambda)*lambda*dot_ab);
+	double theta = acos(((1-lambda)*pow(dis_1,2)+lambda*dot_ab)/(dis_1*m))*180/PI;
+	double target_angle = idx_1 + theta;
+
+	/*采用垂线算法*/ 
+	//答辩
+	// double dot_ab = dis_1 * dis_2 * cos((idx_2 - idx_1) * PI / 180);
+	// double t = (pow(dis_2,2)-dot_ab)/(pow(dis_1,2)-2*dot_ab);
+	// double theta = acos((t*pow(dis_1,2)+dot_ab)/(dis_1*sqrt(pow(t*dis_1,2)+pow(dis_2,2)+2*t*dot_ab)))*180/PI;
+	// double target_angle = idx_1 + theta;
+
 
     double error = target_angle - 180;  // 逆时针转的时候error一般小于0，顺时针大于0
     Servo_Control(kp * error + kd * (error - error_last));
@@ -727,6 +745,11 @@ void run_reverse(double kp, double kd, int max_dis)
     error_last_reverse = error;
 }
 
+void lidar_new9(){
+	Speed_Control(0.6);
+	lidar_new7(0);
+}
+
 //Main function 
 int main(void)
 {	
@@ -747,7 +770,9 @@ int main(void)
 	USART5_START_SEND();
 	//开始循环分析雷达数据
 	while(1){
-		run(0.5, 0.0, 900);
+		run(0.6, 0.0, 750);
+		// Speed_Control(0);
+		// lidar_new9();
 		// Servo_Control(0);
 		// run_reverse(0.5, 0.0, 900);
 	}
